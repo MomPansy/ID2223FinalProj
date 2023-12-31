@@ -59,7 +59,7 @@ def cloud_function_entry_point(new_data):
     )
     drive_service = build("drive", "v3", credentials=credentials)
 
-    folder_id = "1fUm9njnrto7mNMirssukMpcw-VnTpEKd"
+    folder_id = "YOUR_GDRIVE_FOLDER_ID"
     file_name = "data_full.csv"
 
     combined_data_str = check_and_concatenate(
