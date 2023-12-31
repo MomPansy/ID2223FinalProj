@@ -1,12 +1,12 @@
 #!/bin/bash
 
 # Variables
-PROJECT_ID="id2223-finals"
+PROJECT_ID="YOUR_PROJ_ID"
 FUNCTION_NAME="daily-deploy-scheduler"
 RUNTIME="python311"  # or the runtime you are using
 TRIGGER_HTTP_METHOD="post"  # or "get" depending on your function
 SCHEDULE="0 0 * * *"  # Daily at midnight
-FUNCTION_SOURCE="/Users/jayden/Documents/GitHub/Exchange/id2223/finalproject/venv1/scrape"  
+FUNCTION_SOURCE="PATH_TO_YOUR_FILES"  
 ENTRY_POINT="scrape_politifact"
 REGION="europe-west3"
 
