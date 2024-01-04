@@ -4,9 +4,8 @@ import pandas as pd
 from bs4 import BeautifulSoup
 import re 
 from datetime import datetime
-from flask import request
-import csv
 import hopsworks
+from google.cloud import secretmanager
 
 async def fetch_page(session, url):
     print(f"Fetching URL: {url}")
@@ -66,8 +65,18 @@ async def parse_inner_page(session, link_element):
 
     return (statement, inner_link, date, source, label)
 
+def access_secret(secret_id, project_id):
+    client = secretmanager.SecretManagerServiceClient()
+    name = f"projects/{project_id}/secrets/{secret_id}/versions/latest"
+    response = client.access_secret_version(name=name)
+    return response.payload.data.decode("UTF-8")
+
 async def main():
-    project = hopsworks.login()
+    project_id = "id2223finalproj"  
+    secret_id = "hopsworks_api_key"  
+    api_key_value = access_secret(secret_id, project_id)
+
+    project = hopsworks.login(api_key_value=api_key_value)
     fs = project.get_feature_store()
 
     fg = fs.get_feature_group(name="finalproj",version=1)
@@ -84,14 +93,12 @@ async def main():
 
     print("Process completed.")
 
-def scrape_politifact(request):
+def scrape_politifact(data, context):
     """
     This function is triggered by HTTP request.
     """
-    request_json = request.get_json(silent=True)
-    request_args = request.args
-
     # Run the main async function
     asyncio.run(main())
 
     return 'Data collection and processing complete.'
+
