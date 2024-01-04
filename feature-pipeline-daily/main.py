@@ -5,7 +5,10 @@ from bs4 import BeautifulSoup
 import re 
 from datetime import datetime
 import hopsworks
-from google.cloud import secretmanager
+import modal
+import os
+
+LOCAL = False
 
 async def fetch_page(session, url):
     print(f"Fetching URL: {url}")
@@ -65,18 +68,14 @@ async def parse_inner_page(session, link_element):
 
     return (statement, inner_link, date, source, label)
 
-def access_secret(secret_id, project_id):
-    client = secretmanager.SecretManagerServiceClient()
-    name = f"projects/{project_id}/secrets/{secret_id}/versions/latest"
-    response = client.access_secret_version(name=name)
-    return response.payload.data.decode("UTF-8")
+# def access_secret(secret_id, project_id):
+#     client = secretmanager.SecretManagerServiceClient()
+#     name = f"projects/{project_id}/secrets/{secret_id}/versions/latest"
+#     response = client.access_secret_version(name=name)
+#     return response.payload.data.decode("UTF-8")
 
 async def main():
-    project_id = "id2223finalproj"  
-    secret_id = "hopsworks_api_key"  
-    api_key_value = access_secret(secret_id, project_id)
-
-    project = hopsworks.login(api_key_value=api_key_value)
+    project = hopsworks.login(api_key_value = os.environ["HOPSWORK_API_KEY"])
     fs = project.get_feature_store()
 
     fg = fs.get_feature_group(name="finalproj",version=1)
@@ -93,12 +92,32 @@ async def main():
 
     print("Process completed.")
 
-def scrape_politifact(data, context):
-    """
-    This function is triggered by HTTP request.
-    """
-    # Run the main async function
-    asyncio.run(main())
+if LOCAL == False:
 
-    return 'Data collection and processing complete.'
+    stub = modal.Stub('finalproj_daily')
 
+    image = modal.Image.debian_slim().pip_install(["hopsworks", "numpy", "pandas", "python-dotenv",'aiohttp','bs4','asyncio'])
+
+    @stub.function(image = image, schedule = modal.Period(days = 1), secret = modal.Secret.from_name('hopsworks_api_key'))
+
+    def f(): 
+        asyncio.run(main())
+
+
+if __name__ == '__main__':
+    if LOCAL == True:
+        f.local()
+    else:
+        modal.runner.deploy_stub(stub, 'finalproj')
+        with stub.run():
+            f.remote()
+
+
+# def scrape_politifact(data, context):
+#     """
+#     This function is triggered by HTTP request.
+#     """
+#     # Run the main async function
+#     asyncio.run(main())
+
+#     return 'Data collection and processing complete.'
